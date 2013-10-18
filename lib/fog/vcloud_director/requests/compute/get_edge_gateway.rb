@@ -52,7 +52,7 @@ module Fog
           end
 
           vdc_id = edge_gateway[:vdc]
-
+          edge_gateway = self.data[:edge_gateways][id]
           body = {
             :xmlns => xmlns,
             :xmlns_xsi => xmlns_xsi,
@@ -75,18 +75,8 @@ module Fog
                      {:rel => "edgeGateway:syncSyslogSettings",
                       :href => make_href("admin/edgeGateway/#{id}/action/syncSyslogServerSettings")}],
             :Description => "vCloud CI (nft00052i2)",
-            :Configuration =>
-             {:GatewayBackingConfig => "compact",
-              :GatewayInterfaces =>
-               {:GatewayInterface => []},
-              :EdgeGatewayServiceConfiguration =>
-               {:FirewallService =>
-                {:IsEnabled => "true",
-                 :DefaultAction => "drop",
-                 :LogDefaultAction => "false"},
-                :NatService => {:IsEnabled => "true"}},
-              :HaEnabled => "false",
-              :UseDefaultRouteForDnsRelay => "false"}}
+            :Configuration => edge_gateway[:Configuration]
+          }
 
           body[:Configuration][:GatewayInterfaces][:GatewayInterface] += edge_gateway[:networks].map do |network|
             extras = {
