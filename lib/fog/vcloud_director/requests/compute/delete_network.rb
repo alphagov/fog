@@ -24,6 +24,41 @@ module Fog
           )
         end
       end
+
+      class Mock
+        def delete_network(id)
+
+          unless data[:networks][id]
+            raise Fog::Compute::VcloudDirector::Forbidden.new(
+              "No access to entity \"(com.vmware.vcloud.entity.orgVdcNetwork:#{id})\""
+            )
+          end
+
+          owner = {
+            :href => make_href("network/#{id}"),
+            :type => 'application/vnd.vmware.vcloud.network+xml'
+          }
+          task_id = enqueue_task(
+            "Deleting Network(#{id})", 'DeleteNetwork', owner,
+            :on_success => lambda do
+              data[:networks].delete(id)
+            end
+          )
+
+          body = {
+            :xmlns => xmlns,
+            :xmlns_xsi => xmlns_xsi,
+            :xsi_schemaLocation => xsi_schema_location,
+          }.merge(task_body(task_id))
+
+          Excon::Response.new(
+            :status => 202,
+            :headers => {'Content-Type' => "#{body[:type]};version=#{api_version}"},
+            :body => body
+          )
+        end
+
+      end
     end
   end
 end
