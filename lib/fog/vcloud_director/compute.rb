@@ -471,9 +471,12 @@ module Fog
         def data
           @@data ||= Hash.new do |hash, key|
 
-            vdc_uuid = uuid
-            default_network_uuid = uuid
-            uplink_network_uuid = uuid
+            vdc1_uuid = uuid
+            vdc2_uuid = uuid
+            default_network_uuid = '144004d8-acb6-3be5-f6c5-15272a0a1001'
+            uplink_network_uuid  = '144004d8-acb6-3be5-f6c5-15272a0a1002'
+            isolated_vdc1_network_uuid = '144004d8-acb6-3be5-f6c5-15272a0a1003'
+            isolated_vdc2_network_uuid = '144004d8-acb6-3be5-f6c5-15272a0a1004'
 
             hash[key] = {
               :catalogs => {
@@ -492,7 +495,7 @@ module Fog
                 uuid => {
                   :name => 'MockEdgeGateway',
                   :networks => [uplink_network_uuid, default_network_uuid],
-                  :vdc => vdc_uuid,
+                  :vdc => vdc1_uuid,
                   :Configuration => {
                     :GatewayBackingConfig => "compact",
                     :GatewayInterfaces => {
@@ -510,9 +513,14 @@ module Fog
                   }
                 }
               },
+
               :medias => {},
+
               :networks => {
+
                 default_network_uuid => {
+                  :isShared => true,
+                  :vdc => vdc1_uuid,
                   :ApplyRateLimit => "false",
                   :Description => 'Org Network for mocking',
                   :Dns1 => '8.8.8.8',
@@ -534,7 +542,58 @@ module Fog
                   },
                   :UseForDefaultRoute => "false"
                 },
+
+                isolated_vdc1_network_uuid => {
+                  :isShared => false,
+                  :vdc => vdc1_uuid,
+                  :ApplyRateLimit => "false",
+                  :Description => 'Org Network for mocking',
+                  :Dns1 => '8.8.8.8',
+                  :Dns2 => '8.8.4.4',
+                  :DnsSuffix => 'example.com',
+                  :InterfaceType => "internal",
+                  :IpRanges => [{
+                    :StartAddress=>'10.1.0.100',
+                    :EndAddress=>'10.1.0.200'
+                  }],
+                  :IsInherited => false,
+                  :Netmask => '255.255.255.0',
+                  :name => 'vDC1 backend network',
+                  :SubnetParticipation => {
+                      :Gateway => "192.168.1.0",
+                      :Netmask => "255.255.0.0",
+                      :IpAddress => "192.168.1.0"
+                  },
+                  :UseForDefaultRoute => "false"
+                },
+
+                isolated_vdc2_network_uuid => {
+                  :isShared => false,
+                  :vdc => vdc2_uuid,
+                  :ApplyRateLimit => "false",
+                  :Description => 'Org Network for mocking',
+                  :Dns1 => '8.8.8.8',
+                  :Dns2 => '8.8.4.4',
+                  :DnsSuffix => 'example.com',
+                  :InterfaceType => "internal",
+                  :IpRanges => [{
+                    :StartAddress=>'10.2.0.100',
+                    :EndAddress=>'10.2.0.200'
+                  }],
+                  :IsInherited => false,
+                  :Netmask => '255.255.255.0',
+                  :name => 'vDC2 backend network',
+                  :SubnetParticipation => {
+                      :Gateway => "192.168.1.0",
+                      :Netmask => "255.255.0.0",
+                      :IpAddress => "192.168.1.0"
+                  },
+                  :UseForDefaultRoute => "false"
+                },
+
                 uplink_network_uuid => {
+                  :isShared => false,
+                  :vdc => vdc1_uuid,
                   :ApplyRateLimit => "false",
                   :Description => 'Uplink Network for mocking',
                   :Dns1 => '8.8.8.8',
@@ -562,6 +621,7 @@ module Fog
                   },
                   :UseForDefaultRoute => "true"
                 }
+
               },
               :org => {
                 :description => 'Organization for mocking',
@@ -577,14 +637,18 @@ module Fog
                   :limit => 2 * 1024 * 1024,
                   :name => 'DefaultMockStorageClass',
                   :units => 'MB',
-                  :vdc => vdc_uuid,
+                  :vdc => vdc1_uuid,
                 }
               },
               :vdcs => {
-                vdc_uuid => {
-                  :description => 'vDC for mocking',
-                  :name => 'MockVDC'
-                }
+                vdc1_uuid => {
+                  :description => 'vDC1 for mocking',
+                  :name => 'MockVDC 1'
+                },
+                vdc2_uuid => {
+                  :description => 'vDC2 for mocking',
+                  :name => 'MockVDC 2'
+                },
               }
             }
           end[@vcloud_director_username]
