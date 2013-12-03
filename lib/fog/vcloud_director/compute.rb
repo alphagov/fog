@@ -521,6 +521,7 @@ module Fog
                 default_network_uuid => {
                   :isShared => true,
                   :vdc => vdc1_uuid,
+                  :FenceMode => 'natRouted',
                   :ApplyRateLimit => "false",
                   :Description => 'Org Network for mocking',
                   :Dns1 => '8.8.8.8',
@@ -547,6 +548,7 @@ module Fog
                   :isShared => false,
                   :vdc => vdc1_uuid,
                   :ApplyRateLimit => "false",
+                  :FenceMode => 'isolated',
                   :Description => 'Org Network for mocking',
                   :Dns1 => '8.8.8.8',
                   :Dns2 => '8.8.4.4',
@@ -595,6 +597,7 @@ module Fog
                   :isShared => false,
                   :vdc => vdc1_uuid,
                   :ApplyRateLimit => "false",
+                  :FenceMode => 'bridged',
                   :Description => 'Uplink Network for mocking',
                   :Dns1 => '8.8.8.8',
                   :Dns2 => '8.8.4.4',

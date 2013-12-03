@@ -36,6 +36,10 @@ Shindo.tests('Compute::VcloudDirector | network requests', ['vclouddirector']) d
     @service.get_network_metadata(@network_id).body
   end
 
+  tests('Create network in non-existent vDC').raises(Fog::Compute::VcloudDirector::Forbidden) do
+    @service.post_org_vdc_network('00000000-0000-0000-0000-000000000000', 'bob')
+  end
+
   tests('Delete non-existent OrgNetwork').raises(Fog::Compute::VcloudDirector::Forbidden) do
     @service.delete_network('00000000-0000-0000-0000-000000000000')
   end
