@@ -204,6 +204,7 @@ module Fog
       request :post_configure_edge_gateway_services
       request :post_consolidate_vm_vapp
       request :post_consolidate_vm_vapp_template
+      request :post_create_org_vdc_network
       request :post_deploy_vapp
       request :post_detach_disk
       request :post_disable_nested_hv
@@ -218,7 +219,6 @@ module Fog
       request :post_install_vmware_tools
       request :post_instantiate_vapp_template
       request :post_login_session
-      request :post_org_vdc_network
       request :post_power_off_vapp
       request :post_power_on_vapp
       request :post_reboot_vapp

@@ -26,7 +26,7 @@ module Fog
         # @see http://pubs.vmware.com/vcd-51/topic/com.vmware.vcloud.api.reference.doc_51/doc/operations/POST-CreateOrgVdcNetwork.html
         # @since vCloud API version 5.1
 
-        def post_org_vdc_network(id, name, options={})
+        def post_create_org_vdc_network(id, name, options={})
 
           unless options[:fence_mode]
             options[:fence_mode] = options[:gateway_id] ? 'natRouted' : 'isolated'
@@ -82,7 +82,7 @@ module Fog
 
       class Mock
 
-        def post_org_vdc_network(vdc_id, name, attrs={})
+        def post_create_org_vdc_network(vdc_id, name, attrs={})
           unless data[:vdcs][vdc_id]
             raise Fog::Compute::VcloudDirector::Forbidden.new(
               "No access to entity \"(com.vmware.vcloud.entity.vdc:#{vdc_id})\"."
