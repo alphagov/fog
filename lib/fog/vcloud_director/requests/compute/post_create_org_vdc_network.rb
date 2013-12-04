@@ -3,59 +3,58 @@ module Fog
     class VcloudDirector
       class Real
 
-        # Create a 'Organization vDC Network'
+        # Create an Org vDC network.
         #
-        # TaskType
         # This operation is asynchronous and returns a task that you can
         # monitor to track the progress of the request.
+        #
+        # Produce media type(s):
+        # application/vnd.vmware.vcloud.orgVdcNetwork+xml
+        # Output type:
+        # OrgVdcNetworkType
         #
         # @param [String] id Object identifier of the vDC
         # @param [String] name Network Name
         # @param [Hash] options
-        # @option options [String] :gateway_id    Edge Gateway ID
-        # @option options [String] :gateway_ip    IP address of Edge Gateway
-        # @option options [String] :netmask       Subnet mask of this network
-        # @option options [String] :dns1          DNS Server for this network
-        # @option options [String] :suffix        DNS Suffix for this network
-        # @option options [String] :fence_mode    Fence mode of network [optional]
-        # @option options [Array]  :ip_ranges     Array of { :start => "1.2.3.4", :end => "5.6.7.8" } ip range hashes
+        # @option options [String] :Gateway      Edge Gateway ID
+        # @option options [String] :Gateway      Edge Gateway IP
+        # @option options [String] :Netmask      Subnet mask of this network
+        # @option options [String] :Dns1         DNS Server 1 for this network
+        # @option options [String] :Dns2         DNS Server 2 for this network
+        # @option options [String] :DnsSuffix    DNS Suffix for this network
+        # @option options [String] :FenceMode    Fence mode of network [optional]
+        # @option options [Array]  :IpRanges     Array of { :start => "1.2.3.4", :end => "5.6.7.8" } ip range hashes
         #
         # @return [Excon::Response]
         #   * body<~Hash>:
         #
         # @see http://pubs.vmware.com/vcd-51/topic/com.vmware.vcloud.api.reference.doc_51/doc/operations/POST-CreateOrgVdcNetwork.html
         # @since vCloud API version 5.1
-
         def post_create_org_vdc_network(id, name, options={})
-
-          unless options[:fence_mode]
-            options[:fence_mode] = options[:gateway_id] ? 'natRouted' : 'isolated'
-          end
-
           body = Nokogiri::XML::Builder.new do
             attrs = {
               :xmlns => 'http://www.vmware.com/vcloud/v1.5',
               :name  => name
             }
             OrgVdcNetwork(attrs) {
-              if options[:gateway_id]
-                EdgeGateway(:href => "#{@end_point}gateway/#{gateway_id}")
-              end
+              Description options[:Description] if options.key?(:Description)
               Configuration {
                 IpScopes {
                   IpScope {
-                    IsInherited  'false'
-                    Gateway      options[:gateway_ip]
-                    Netmask      options[:netmask]
-                    Dns1         options[:dns1]         unless options[:dns1].nil?
-                    Dns2         options[:dns2]         unless options[:dns2].nil?
-                    DnsSuffix    options[:dns_suffix]   unless options[:dns_suffix].nil?
-                    if options[:ip_ranges] && options[:ip_ranges].to_a.size > 0
+                    #IsInherited  false 
+                    Gateway      options[:Gateway]
+                    Netmask      options[:Netmask]
+                    Dns1         options[:Dns1]        if options.key?(:Dns1)
+                    Dns2         options[:Dns2]        if options.key?(:Dns2)
+                    DnsSuffix    options[:DnsSuffix]   if options.key?(:DnsSuffix)
+                    if ip_ranges = options[:IpRanges]
                       IpRanges {
-                        ip_ranges.to_a.each do |ip_range|
+                        # TODO this is only handling the single IpRange case
+                        #      and needs to handle >=1 IpRange elements
+                        if ip_range = ip_ranges[:IpRange]
                           IpRange {
-                            StartAddress "#{ip_range[:start]}"
-                            EndAddress   "#{ip_range[:end]}"
+                            StartAddress ip_range[:StartAddress]
+                            EndAddress   ip_range[:EndAddress]
                           }
                         end
                       }
@@ -64,7 +63,10 @@ module Fog
                 }
                 FenceMode    options[:fence_mode]
               }
-              IsShared       'true'
+              if edgegw = options[EdgeGateway]
+                EdgeGateway(:href => edgegw[:href])
+              end
+              IsShared       options[:is_shared] if options.key?(:is_shared)
             }
 
           end.to_xml
@@ -82,15 +84,11 @@ module Fog
 
       class Mock
 
-        def post_create_org_vdc_network(vdc_id, name, attrs={})
+        def post_create_org_vdc_network(vdc_id, name, options={})
           unless data[:vdcs][vdc_id]
             raise Fog::Compute::VcloudDirector::Forbidden.new(
               "No access to entity \"(com.vmware.vcloud.entity.vdc:#{vdc_id})\"."
             )
-          end
-
-          unless options[:fence_mode]
-            options[:fence_mode] = options[:gateway_id] ? 'natRouted' : 'isolated'
           end
 
           type = 'network'
@@ -99,14 +97,14 @@ module Fog
           network_body = {
             :name           => name,
             :vdc            => vdc_id,
-            :isShared       => attrs[:isShared],
+            :isShared       => options[:IsShared],
             :ApplyRateLimit => 'false',
-            :Description    => attrs[:description],
-            :Dns1           => attrs[:dns1],
-            :Dns2           => attrs[:dns2],
-            :DnsSuffix      => attrs[:dns_suffix],
-            :Gateway        => attrs[:gateway],
-            :FenceMode      => attrs[:fence_mode],
+            :Description    => options[:Description],
+            :Dns1           => options[:Dns1],
+            :Dns2           => options[:Dns2],
+            :DnsSuffix      => options[:DnsSuffix],
+            :Gateway        => options[:Gateway],
+            :FenceMode      => options[:FenceMode],
           }
 
           owner = {
