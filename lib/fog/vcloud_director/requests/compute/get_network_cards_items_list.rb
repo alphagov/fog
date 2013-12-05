@@ -2,6 +2,8 @@ module Fog
   module Compute
     class VcloudDirector
       class Real
+        require 'fog/vcloud_director/parsers/compute/our_to_hash_document'
+
         # Retrieve all RASD items that specify network card properties of a VM.
         #
         # @param [String] id Object identifier of the VM.
@@ -15,7 +17,7 @@ module Fog
             :expects    => 200,
             :idempotent => true,
             :method     => 'GET',
-            :parser     => Fog::ToHashDocument.new,
+            :parser     => Fog::Parsers::Compute::VcloudDirector::OurToHashDocument.new,
             :path       => "vApp/#{id}/virtualHardwareSection/networkCards"
           )
         end
