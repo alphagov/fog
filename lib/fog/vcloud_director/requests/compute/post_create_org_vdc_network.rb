@@ -13,11 +13,33 @@ module Fog
         # Output type:
         # OrgVdcNetworkType
         #
-        # @param [String] id Object identifier of the vDC
-        # @param [String] name Network Name
+        # @param [String] vdc_id Object identifier of the vDC
+        # @param [String] name   The name of the entity.
         # @param [Hash] options
-        # @option options [String] :Gateway      Edge Gateway ID
-        # @option options [String] :Gateway      Edge Gateway IP
+        # @option options [String] :Description Optional description.
+        # @option options [Hash] :Configuration Network configuration.
+        # @option options [Hash] :EdgeGateway  EdgeGateway that connects this 
+        #   Org vDC network. Applicable only for routed networks.
+        # @option options [Hash] :ServiceConfig Specifies the service 
+        #   configuration for an isolated Org vDC networks.
+        # @option options [Boolean] :IsShared True if this network is shared 
+        #   to multiple Org vDCs.
+        #   * :Configuration<~Hash>: NetworkConfigurationType
+        #     * :IpScopes<~Hash>:
+        #       * :IpScope<~Hash>:
+        #         * :IsInherited<~Boolean>: ?
+        #         * :Gateway<~String>: IP address of gw
+        #         * :Netmask<~String>: Subnet mask of network
+        #         * :Dns1<~String>: Primary DNS server.
+        #         * :Dns2<~String>: Secondary DNS server.
+        #         * :DnsSuffix<~String>: DNS suffix.
+        #         * :IsEnabled<~String>: Indicates if subnet is enabled or not.
+        #                                Default value is True.
+        #         * :IpRanges<~Hash>: IP ranges used for static pool allocation
+        #                             in the network.
+        #   * :EdgeGateway<~Hash>:
+        #   * :ServiceConfig<~Hash>:
+        #
         # @option options [String] :Netmask      Subnet mask of this network
         # @option options [String] :Dns1         DNS Server 1 for this network
         # @option options [String] :Dns2         DNS Server 2 for this network
@@ -30,7 +52,7 @@ module Fog
         #
         # @see http://pubs.vmware.com/vcd-51/topic/com.vmware.vcloud.api.reference.doc_51/doc/operations/POST-CreateOrgVdcNetwork.html
         # @since vCloud API version 5.1
-        def post_create_org_vdc_network(id, name, options={})
+        def post_create_org_vdc_network(vdc_id, name, options={})
           body = Nokogiri::XML::Builder.new do
             attrs = {
               :xmlns => 'http://www.vmware.com/vcloud/v1.5',
@@ -38,37 +60,61 @@ module Fog
             }
             OrgVdcNetwork(attrs) {
               Description options[:Description] if options.key?(:Description)
-              Configuration {
-                IpScopes {
-                  IpScope {
-                    #IsInherited  false 
-                    Gateway      options[:Gateway]
-                    Netmask      options[:Netmask]
-                    Dns1         options[:Dns1]        if options.key?(:Dns1)
-                    Dns2         options[:Dns2]        if options.key?(:Dns2)
-                    DnsSuffix    options[:DnsSuffix]   if options.key?(:DnsSuffix)
-                    if ip_ranges = options[:IpRanges]
-                      IpRanges {
-                        # TODO this is only handling the single IpRange case
-                        #      and needs to handle >=1 IpRange elements
-                        if ip_range = ip_ranges[:IpRange]
-                          IpRange {
-                            StartAddress ip_range[:StartAddress]
-                            EndAddress   ip_range[:EndAddress]
-                          }
-                        end
-                      }
-                    end
-                  }
+              if configuration = options[:Configuration]
+                Configuration {
+                  if ip_scopes = configuration[:IpScopes]
+                    IpScopes {
+                      if ip_scope = ip_scopes[:IpScope]
+                        IpScope {
+                          IsInherited  ip_scope[:IsInherited] if ip_scope.key?(:IsInherited)
+                          Gateway      ip_scope[:Gateway]     if ip_scope.key(:Gateway)
+                          Netmask      ip_scope[:Netmask]     if ip_scope.key(:Network)
+                          Dns1         ip_scope[:Dns1]        if ip_scope.key?(:Dns1)
+                          Dns2         ip_scope[:Dns2]        if ip_scope.key?(:Dns2)
+                          DnsSuffix    ip_scope[:DnsSuffix]   if ip_scope.key?(:DnsSuffix)
+                          IsEnabled    ip_scope[:IsEnabled]   if ip_scope.key?(:IsEnabled)
+                          if ip_ranges = ip_scope[:IpRanges]
+                            IpRanges {
+                              if ip_range = ip_ranges[:IpRange]
+                                # TODO this is only handling the single IpRange case
+                                #      and needs to handle >=1 IpRange elements?
+                                IpRange {
+                                  StartAddress ip_range[:StartAddress]
+                                  EndAddress   ip_range[:EndAddress]
+                                }
+                              end
+                            }
+                          end
+                        }
+                      end
+                    }
+                  end
+                  FenceMode    configuration[:fence_mode]
+                  # TODO
+                  #if features = configuration[:Features]
+                  #  Feature {
+                  #  }
+                  #end
+                  # TODO
+                  #if syslog = configuration[:SyslogServerSettings]
+                  #  SyslogServerSettings {
+                  #  }
+                  #end
+                  if router_info = configuration[:RouterInfo]
+                    RouterInfoType {
+                      ExternalIp router_info[:ExternalIp]
+                    }
+                  end
                 }
-                FenceMode    options[:fence_mode]
-              }
-              if edgegw = options[EdgeGateway]
+              end
+
+              if edgegw = options[:EdgeGateway]
                 EdgeGateway(:href => edgegw[:href])
               end
-              IsShared       options[:is_shared] if options.key?(:is_shared)
-            }
 
+              IsShared       options[:is_shared] if options.key?(:is_shared)
+
+            }
           end.to_xml
 
           request(
@@ -94,18 +140,50 @@ module Fog
           type = 'network'
           id = uuid
 
+          # Description
+          # Configuration
+          #   IpScopes
+          #     IpScope
+          #       IsInherited
+          #       Gateway
+          #       Netmask
+          #       Dns1
+          #       Dns2
+          #       DnsSuffix
+          #       IsEnabled
+          #       IpRanges
+          #         IpRange
+          #           StartAddress
+          #           EndAddress
+          #   FenceMode
+          # EdgeGateway
+          # IsShared
+
           network_body = {
             :name           => name,
             :vdc            => vdc_id,
-            :isShared       => options[:IsShared],
-            :ApplyRateLimit => 'false',
-            :Description    => options[:Description],
-            :Dns1           => options[:Dns1],
-            :Dns2           => options[:Dns2],
-            :DnsSuffix      => options[:DnsSuffix],
-            :Gateway        => options[:Gateway],
-            :FenceMode      => options[:FenceMode],
           }
+
+          [:Description, :IsShared].each do |key|
+            network_body[key] = options[key] if options.key?(key)
+          end
+
+          if options.key?(:EdgeGateway)
+            network_body[:EdgeGateway] = 
+              options[:EdgeGateway][:href].split('/').last
+          end
+
+          if configuration = options[:Configuration]
+            if ip_scopes = configuration[:IpScopes]
+              if ip_scope = ip_scopes[:IpScope]
+                [:IsInherited, :Gateway, :Netmask, 
+                  :Dns1, :Dns2, :DnsSuffix, :IsEnabled].each do |key|
+                    network_body[key] = ip_scope[key] if ip_scope.key?(key)
+                end
+              end
+            end
+            network_body[:FenceMode] = configuration[:FenceMode] if ip_scope.key?(:FenceMode)
+          end
 
           owner = {
             :href => make_href("#{type}/#{id}"), # ???
