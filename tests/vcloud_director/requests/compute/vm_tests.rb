@@ -73,6 +73,10 @@ Shindo.tests('Compute::VcloudDirector | vm requests', ['vclouddirector']) do
                 pending if Fog.mocking?
                 @service.get_network_cards_items_list(vm_id).body.class
               end
+              tests("#get_network_cards_items_list(#{vm_id})").data_matches_schema(VcloudDirector::Compute::Schema::NETWORK_CARD_RASD_ITEM_TYPE) do
+                pending if Fog.mocking?
+                @service.get_network_cards_items_list(vm_id).body[:Item].first
+              end
               tests("#get_serial_ports_items_list(#{vm_id})").returns(Hash) do
                 pending if Fog.mocking?
                 @service.get_serial_ports_items_list(vm_id).body.class

@@ -633,6 +633,28 @@ class VcloudDirector
       VMS_TYPE = RESOURCE_TYPE.merge({
         :VmReference => [REFERENCE_TYPE]
       })
+
+      # Mapping of a content media type to a xsd complex type.
+      NETWORK_CARD_RASD_ITEM_TYPE = {
+        :'rasd:Address' => String,
+        :"rasd:AddressOnParent" => String,
+        :"rasd:AutomaticAllocation" => String,
+        :"rasd:Connection" => {
+          :attributes => {
+            :xmlns_ns12 => String,
+            :ns12_ipAddress => String,
+            :ns12_primaryNetworkConnection => String,
+            :ns12_ipAddressingMode => String,
+          },
+          :value => String,
+        },
+        :"rasd:Description" => String,
+        :"rasd:ElementName" => String,
+        :"rasd:InstanceID" => String,
+        :"rasd:ResourceSubType" => String,
+        :"rasd:ResourceType" => String,
+      }
+
     end
   end
 end
