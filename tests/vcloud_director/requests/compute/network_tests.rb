@@ -12,10 +12,6 @@ Shindo.tests('Compute::VcloudDirector | network requests', ['vclouddirector']) d
     @service.get_network('00000000-0000-0000-0000-000000000000')
   end
 
-  tests('Retrieve non-existent vDC orgVdcNetworks').raises(Fog::Compute::VcloudDirector::Forbidden) do
-    @service.get_org_vdc_networks('00000000-0000-0000-0000-000000000000')
-  end
-
   GET_NETWORK_FORMAT = {
     :type => String,
     :name => String,

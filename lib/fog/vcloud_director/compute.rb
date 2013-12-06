@@ -138,7 +138,6 @@ module Fog
       request :get_operating_system_section
       request :get_org_settings
       request :get_org_vdc_gateways
-      request :get_org_vdc_networks
       request :get_organization
       request :get_organization_metadata
       request :get_organization_metadata_item_metadata
