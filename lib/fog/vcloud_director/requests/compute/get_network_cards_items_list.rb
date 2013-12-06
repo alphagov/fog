@@ -13,13 +13,15 @@ module Fog
         # @see http://pubs.vmware.com/vcd-51/topic/com.vmware.vcloud.api.reference.doc_51/doc/operations/GET-NetworkCardsItemsList.html
         # @since vCloud API version 0.9
         def get_network_cards_items_list(id)
-          request(
+          response = request(
             :expects    => 200,
             :idempotent => true,
             :method     => 'GET',
             :parser     => Fog::Parsers::Compute::VcloudDirector::OurToHashDocument.new,
             :path       => "vApp/#{id}/virtualHardwareSection/networkCards"
           )
+          ensure_list! response.body, :Item
+          response
         end
       end
     end
