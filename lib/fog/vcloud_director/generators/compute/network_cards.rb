@@ -46,14 +46,8 @@ module Fog
 
           def initialize(data)
             raise "Invalid data for NetworkCards (no :Item)" unless data.key?(:Item)
-            items = data[:Item]
-            if items.is_a? Hash
-              @items = [ items ]
-            elsif items.is_a? Array
-              @items = items
-            else
-              raise "Invalid data for NetworkCards"
-            end
+            raise "Invalid data for NetworkCards (:Item should be Array)" unless data[:Item].is_a? Array
+            @items = data[:Item]
           end
 
           def generate_xml
