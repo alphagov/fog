@@ -3,6 +3,8 @@ module Fog
     class VcloudDirector
       class Real
 
+        require 'fog/vcloud_director/generators/compute/org_vdc_network'
+
         # Create an Org vDC network.
         #
         # This operation is asynchronous and returns a task that you can
@@ -37,8 +39,11 @@ module Fog
         #                                Default value is True.
         #         * :IpRanges<~Hash>: IP ranges used for static pool allocation
         #                             in the network.
-        #   * :EdgeGateway<~Hash>:
-        #   * :ServiceConfig<~Hash>:
+        #   * :EdgeGateway<~Hash>: EdgeGateway that connects this Org vDC
+        #                          network. Applicable only for routed networks.
+        #   * :ServiceConfig<~Hash>: Specifies the service configuration for an
+        #                            isolated network
+        #
         #
         # @option options [String] :Netmask      Subnet mask of this network
         # @option options [String] :Dns1         DNS Server 1 for this network
@@ -53,69 +58,8 @@ module Fog
         # @see http://pubs.vmware.com/vcd-51/topic/com.vmware.vcloud.api.reference.doc_51/doc/operations/POST-CreateOrgVdcNetwork.html
         # @since vCloud API version 5.1
         def post_create_org_vdc_network(vdc_id, name, options={})
-          body = Nokogiri::XML::Builder.new do
-            attrs = {
-              :xmlns => 'http://www.vmware.com/vcloud/v1.5',
-              :name  => name
-            }
-            OrgVdcNetwork(attrs) {
-              Description options[:Description] if options.key?(:Description)
-              if configuration = options[:Configuration]
-                Configuration {
-                  if ip_scopes = configuration[:IpScopes]
-                    IpScopes {
-                      if ip_scope = ip_scopes[:IpScope]
-                        IpScope {
-                          IsInherited  ip_scope[:IsInherited] if ip_scope.key?(:IsInherited)
-                          Gateway      ip_scope[:Gateway]     if ip_scope.key(:Gateway)
-                          Netmask      ip_scope[:Netmask]     if ip_scope.key(:Network)
-                          Dns1         ip_scope[:Dns1]        if ip_scope.key?(:Dns1)
-                          Dns2         ip_scope[:Dns2]        if ip_scope.key?(:Dns2)
-                          DnsSuffix    ip_scope[:DnsSuffix]   if ip_scope.key?(:DnsSuffix)
-                          IsEnabled    ip_scope[:IsEnabled]   if ip_scope.key?(:IsEnabled)
-                          if ip_ranges = ip_scope[:IpRanges]
-                            IpRanges {
-                              if ip_range = ip_ranges[:IpRange]
-                                # TODO this is only handling the single IpRange case
-                                #      and needs to handle >=1 IpRange elements?
-                                IpRange {
-                                  StartAddress ip_range[:StartAddress]
-                                  EndAddress   ip_range[:EndAddress]
-                                }
-                              end
-                            }
-                          end
-                        }
-                      end
-                    }
-                  end
-                  FenceMode    configuration[:fence_mode]
-                  # TODO
-                  #if features = configuration[:Features]
-                  #  Feature {
-                  #  }
-                  #end
-                  # TODO
-                  #if syslog = configuration[:SyslogServerSettings]
-                  #  SyslogServerSettings {
-                  #  }
-                  #end
-                  if router_info = configuration[:RouterInfo]
-                    RouterInfoType {
-                      ExternalIp router_info[:ExternalIp]
-                    }
-                  end
-                }
-              end
 
-              if edgegw = options[:EdgeGateway]
-                EdgeGateway(:href => edgegw[:href])
-              end
-
-              IsShared       options[:is_shared] if options.key?(:is_shared)
-
-            }
-          end.to_xml
+          body = Fog::Generators::Compute::VcloudDirector::OrgVdcNetwork.new(options.merge(:name => name)).generate_xml
 
           request(
             :body    => body,
@@ -125,6 +69,7 @@ module Fog
             :parser  => Fog::ToHashDocument.new,
             :path    => "admin/vdc/#{id}/networks"
           )
+
         end
       end
 
