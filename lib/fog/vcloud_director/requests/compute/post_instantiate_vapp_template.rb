@@ -128,6 +128,52 @@ module Fog
           end
         end
       end
+
+      class Mock
+        def post_instantiate_vapp_template(vdc_id, vapp_template_id, name, options={})
+          unless data[:vdcs][vdc_id]
+            raise Fog::Compute::VcloudDirector::Forbidden.new(
+              "No access to entity \"(com.vmware.vcloud.entity.vdc:#{vdc_id})\"."
+            )
+          end
+
+          type = 'vApp'
+          id = "vapp-#{uuid}"
+
+          data[:vapps][id] = {
+            :name => name,
+            :vdc_id => vdc_id,
+            :description => options.fetch(:description, "vApp created from #{vapp_template_id}"),
+            :networks => [],
+            :status => "0",
+          }
+
+          owner = {
+            :href => make_href("#{type}/#{id}"),
+            :type => "application/vnd.vmware.vcloud.#{type}+xml"
+          }
+          task_id = enqueue_task(
+            "Creating Virtual Application #{name}(#{id})", 'vdcInstantiateVapp', owner,
+            :on_success => lambda do
+              data[:vapps][id][:status] = "8"
+            end
+          )
+
+          body = get_vapp(id)
+
+          body[:Tasks] = {
+            :Task => task_body(task_id)
+          }
+
+          Excon::Response.new(
+            :status => 201,
+            :headers => {'Content-Type' => "#{body[:type]};version=#{api_version}"},
+            :body => body
+          )
+        end
+
+      end
+
     end
   end
 end
