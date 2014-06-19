@@ -152,7 +152,14 @@ module Fog
           data[:vms][vm_id] = {
             :name => 'vm-template-name',
             :parent_vapp => vapp_id,
-            :nics => [],
+            :memory_in_mb => "1024",
+            :nics => [
+              {
+              :network_name => 'Default Network',
+              :mac_address => "00:50:56:00:00:00",
+              :ip_address => "192.168.0.1",
+              }
+            ],
           }
 
           owner = {
