@@ -138,9 +138,10 @@ module Fog
           end
 
           type = 'vApp'
-          id = "vapp-#{uuid}"
+          vapp_id = "vapp-#{uuid}"
+          vm_id = "vm-#{uuid}"
 
-          data[:vapps][id] = {
+          data[:vapps][vapp_id] = {
             :name => name,
             :vdc_id => vdc_id,
             :description => options.fetch(:description, "vApp created from #{vapp_template_id}"),
@@ -148,18 +149,24 @@ module Fog
             :status => "0",
           }
 
+          data[:vms][vm_id] = {
+            :name => 'vm-template-name',
+            :parent_vapp => vapp_id,
+            :nics => [],
+          }
+
           owner = {
-            :href => make_href("#{type}/#{id}"),
+            :href => make_href("#{type}/#{vapp_id}"),
             :type => "application/vnd.vmware.vcloud.#{type}+xml"
           }
           task_id = enqueue_task(
-            "Creating Virtual Application #{name}(#{id})", 'vdcInstantiateVapp', owner,
+            "Creating Virtual Application #{name}(#{vapp_id})", 'vdcInstantiateVapp', owner,
             :on_success => lambda do
-              data[:vapps][id][:status] = "8"
+              data[:vapps][vapp_id][:status] = "8"
             end
           )
 
-          body = get_vapp(id)
+          body = get_vapp(vapp_id).body
 
           body[:Tasks] = {
             :Task => task_body(task_id)
