@@ -22,6 +22,55 @@ module Fog
           response
         end
       end
+
+      class Mock
+
+        def get_vapp_metadata(id)
+          unless data[:vapps][id] || data[:vms][id]
+            raise Fog::Compute::VcloudDirector::Forbidden.new(
+              'This operation is denied.'
+            )
+          end
+
+          body = {
+            :xmlns=>xmlns,
+            :xmlns_xsi=>xmlns_xsi,
+            :type=>"application/vnd.vmware.vcloud.metadata+xml",
+            :href=>make_href("vApp/#{id}/metadata"),
+            :xsi_schemaLocation=>xsi_schema_location,
+            :Link=>
+             [{:rel=>"up",
+               :type=>"application/vnd.vmware.vcloud.vApp+xml",
+               :href=>make_href("/vApp/#{id}")},
+              {:rel=>"add",
+               :type=>"application/vnd.vmware.vcloud.metadata+xml",
+               :href=>make_href("vApp/#{id}/metadata")}],
+            :MetadataEntry=>
+              [{:type=>"application/vnd.vmware.vcloud.metadata.value+xml",
+                :href=>make_href("vApp/#{id}/metadata/machine-type"),
+                :Link=>
+                  [{:rel=>"up",
+                    :type=>"application/vnd.vmware.vcloud.metadata+xml",
+                    :href=>make_href("vApp/#{id}/metadata")},
+                   {:rel=>"edit",
+                    :type=>"application/vnd.vmware.vcloud.metadata.value+xml",
+                    :href=>make_href("vApp/#{id}/metadata/machine-type")},
+                   {:rel=>"remove",
+                    :href=>make_href("vApp/#{id}/metadata/machine-type")}],
+                :Key=>"machine-type",
+                :TypedValue=>{:xsi_type=>"MetadataStringValue", :Value=>"backend"}}
+              ]
+            }
+
+          Excon::Response.new(
+            :status => 200,
+            :headers => {'Content-Type' => "#{body[:type]};version=#{api_version}"},
+            :body => body
+          )
+
+        end
+
+      end
     end
   end
 end
