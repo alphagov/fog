@@ -26,7 +26,7 @@ module Fog
       class Mock
 
         def get_vapp_metadata(id)
-          unless data[:vapps][id] || data[:vms][id]
+          unless vm_or_vapp = data[:vapps][id] || vm_or_vapp = data[:vms][id]
             raise Fog::Compute::VcloudDirector::Forbidden.new(
               'This operation is denied.'
             )
@@ -45,29 +45,35 @@ module Fog
               {:rel=>"add",
                :type=>"application/vnd.vmware.vcloud.metadata+xml",
                :href=>make_href("vApp/#{id}/metadata")}],
-            :MetadataEntry=>
-              [{:type=>"application/vnd.vmware.vcloud.metadata.value+xml",
-                :href=>make_href("vApp/#{id}/metadata/machine-type"),
-                :Link=>
-                  [{:rel=>"up",
-                    :type=>"application/vnd.vmware.vcloud.metadata+xml",
-                    :href=>make_href("vApp/#{id}/metadata")},
-                   {:rel=>"edit",
-                    :type=>"application/vnd.vmware.vcloud.metadata.value+xml",
-                    :href=>make_href("vApp/#{id}/metadata/machine-type")},
-                   {:rel=>"remove",
-                    :href=>make_href("vApp/#{id}/metadata/machine-type")}],
-                :Key=>"machine-type",
-                :TypedValue=>{:xsi_type=>"MetadataStringValue", :Value=>"backend"}}
-              ]
-            }
+            :MetadataEntry=>get_metadata_entries(vm_or_vapp[:metadata], id)
+          }
 
           Excon::Response.new(
             :status => 200,
             :headers => {'Content-Type' => "#{body[:type]};version=#{api_version}"},
             :body => body
           )
+        end
 
+        def get_metadata_entries(metadata, id)
+          metadata_entries = []
+
+          for key, value in metadata do
+          metadata_entries << {:type=>"application/vnd.vmware.vcloud.metadata.value+xml",
+              :href=>make_href("vApp/#{id}/metadata/#{key}"),
+              :Link=>
+                [{:rel=>"up",
+                  :type=>"application/vnd.vmware.vcloud.metadata+xml",
+                  :href=>make_href("vApp/#{id}/metadata")},
+                 {:rel=>"edit",
+                  :type=>"application/vnd.vmware.vcloud.metadata.value+xml",
+                  :href=>make_href("vApp/#{id}/metadata/#{key}")},
+                 {:rel=>"remove",
+                  :href=>make_href("vApp/#{id}/metadata/#{key}")}],
+              :Key=>"#{key}",
+              :TypedValue=>{:xsi_type=>"MetadataStringValue", :Value=>"#{metadata[key]}"}}
+          end
+          metadata_entries
         end
 
       end
