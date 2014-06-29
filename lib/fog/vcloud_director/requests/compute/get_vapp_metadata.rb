@@ -55,6 +55,8 @@ module Fog
           )
         end
 
+        private
+
         def get_metadata_entries(metadata, id)
           metadata_entries = []
 
