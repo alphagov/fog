@@ -116,6 +116,47 @@ module Fog
           )
         end
       end
+
+      class Mock
+        def put_network_connection_system_section_vapp(id, options={})
+          unless vm = data[:vms][id]
+            raise Fog::Compute::VcloudDirector::Forbidden.new(
+              'This operation is denied.'
+            )
+          end
+
+          binding.pry
+
+          owner = {
+            :href => make_href("vApp/#{id}"),
+            :type => 'application/vnd.vmware.vcloud.vm+xml'
+          }
+          task_id = enqueue_task(
+            "Updating Virtual Machine #{data[:vms][id][:name]}(#{id})", 'vappUpdateVm', owner,
+            :on_success => lambda do
+              data[:vms][id][:nics][0][:network_name] = options[:NetworkConnection][0][:network]
+              # I need a way to mock the fact that it defaults
+              # to DCHP. But this is our logic, I think, so...
+              data[:vms][id][:nics][0][:ip_address] = "" 
+            end
+          )
+          body = {
+            :xmlns => xmlns,
+            :xmlns_xsi => xmlns_xsi,
+            :xsi_schemaLocation => xsi_schema_location,
+          }.merge(task_body(task_id))
+
+          Excon::Response.new(
+            :status => 202,
+            :headers => {'Content-Type' => "#{body[:type]};version=#{api_version}"},
+            :body => body
+          )
+
+        end
+
+      end
+
+
     end
   end
 end
